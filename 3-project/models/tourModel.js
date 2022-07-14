@@ -98,7 +98,7 @@ const tourSchema = new mongoose.Schema(
 tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
 });
-// IMPORTANT: We CANNOT use this virtual property i a query bc they're technically not part of the databse
+// IMPORTANT: We CANNOT use this virtual property in a query bc they're technically not part of the databse
 
 // Pre-save hook:
 // This function will be called before a document is saved to thedatabase
