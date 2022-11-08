@@ -10,19 +10,19 @@ class APIFeatures {
   filter() {
     //BUILD QUERY
     // 1A) Filtering
-    console.log(this.queryString);
+    // console.log(this.queryString);
     const queryObj = { ...this.queryString };
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach((el) => {
       delete queryObj[el];
     });
-    console.log(queryObj);
+    // console.log(queryObj);
 
     // 1B) Advanced filtering
     //We stringify the object to then replace a piece of content
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-    console.log(JSON.parse(queryStr));
+    // console.log(JSON.parse(queryStr));
     // Note : We add a \b before and after bc we only want to match these exact words.
     // We add the g flag which means that it will actually happen multiple times
     // The replace method accept a callback function and its first argument is the match string

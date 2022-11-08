@@ -187,7 +187,7 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
   const plan = await Tour.aggregate([
     {
       $unwind: '$startDates',
-      // By doing that we will have on document for each of the start dates
+      // By doing that we will have one document for each of the start dates
     },
     {
       $match: {

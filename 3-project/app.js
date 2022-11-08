@@ -3,6 +3,11 @@
 const fs = require('fs');
 const express = require('express');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanatize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const hpp = require('hpp');
 
 const AppError = require('./utils/appError');
 const globalErrorHanlder = require('./controllers/errorController');
@@ -11,16 +16,53 @@ const userRouter = require('./routes/userRoutes');
 
 const app = express();
 
-// 1) MIDDLEWARES
+// 1) GLOBAL MIDDLEWARES
 
+// Set security HTTP headers
+app.use(helmet());
+
+// Development logging
 if (process.env.NODE_ENV == 'development') {
   app.use(morgan('dev'));
 }
 
-// This express.json is middleware. And middleware is basically a function that can modify the incoming request data. It's called middleware bc it stands between, so in the middle of the request and the response. It's a step that the request goes through while it's being processed. (In this exemple the step the request goes through is simply that the data from the body is added to it, i.e. to the request object, by using this middleware. We need app.use to use this middle middleware)
-app.use(express.json());
+// Limit requests from same API
+// rateLimit is a function which will, based on our object, create a middleware function, which we now can use using app.use.
+// In here we can define how many requests per IP we are going to allow in a certain amount of time
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 60 * 60 * 1000,
+  message: 'Too many requests from this IP, please try again in an hour!',
+}); // We want to allow 100 requests from the same IP in one hour
+app.use('/api', limiter);
 
-// How to serve static files
+// Body parser, reading data from body into req.body
+// This express.json is middleware. And middleware is basically a function that can modify the incoming request data. It's called middleware bc it stands between, so in the middle of the request and the response. It's a step that the request goes through while it's being processed. (In this exemple the step the request goes through is simply that the data from the body is added to it, i.e. to the request object, by using this middleware. We need app.use to use this middle middleware)
+app.use(express.json({ limit: '10kb' }));
+// we can limit the amount of data that comes in the body
+
+// Data sanitization against NoSQL query injection
+app.use(mongoSanatize());
+
+// Data sanatization against XSS
+app.use(xss());
+
+// Prevent parameter pollution
+// (should be used by the end because it clears up the query string. For exemple if we have api/v1/tours?sort=duration&sort=price, we won't get an error anymore but we will only consider the last sort)
+app.use(
+  hpp({
+    whitelist: [
+      'duration',
+      'ratingsAvarage',
+      'ratingsQuantity',
+      'maxGroupSize',
+      'difficulty',
+      'price',
+    ], // we can specify a white list of properties for which we actually allow duplicates in the query string
+  })
+);
+
+// Serving static files
 app.use(express.static(`${__dirname}/public`));
 
 // We add more middlewares to our middlewares stack.
@@ -31,6 +73,7 @@ app.use(express.static(`${__dirname}/public`));
 //   next();
 // });
 
+// Test middleware
 app.use((req, res, next) => {
   // We add "requestTime" to the request
   req.requestTime = new Date().toISOString();
