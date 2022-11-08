@@ -1,5 +1,7 @@
 // NOTE : This app.js file is usually mainly used for middleware declarations
 
+console.log('test');
+
 const fs = require('fs');
 const express = require('express');
 const morgan = require('morgan');
