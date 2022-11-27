@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const validator = require('validator'); // We will use the validator.js library -> See on github
+// const User = require('./userModel');
 
 // To create a model, we actually need a schema. We use a schema to describe our data, to set default values, etc.
 const tourSchema = new mongoose.Schema(
@@ -83,12 +84,44 @@ const tourSchema = new mongoose.Schema(
       type: Boolean, //We wadd a secretTour parameter, if it's true, we won't show up the tour thanks to the pre-find middleware
       default: false,
     },
+    startLocation: {
+      // GeoJSON in order to specify geospatial data
+      type: {
+        type: String,
+        default: 'Point', // we can specify multiple geometries in MongoDB, the default one is Point
+        enum: ['Point'], // and here Point is the only possible option
+      },
+      coordinates: [Number],
+      address: String,
+      description: String,
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point'],
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number,
+      },
+    ],
+    // guides: Array,
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   // We passed a first object for the schema definition but we can also pass a second object for the options
 
   {
     toJSON: { virtuals: true },
     // Each time the date is actually outputted as JSON, we want virtuals to be true (so virtuals to be part of the output)
+    // A virtual property is a field not stored in the database but calulated using some other value
     toObject: { virtuals: true },
   }
 );
@@ -96,9 +129,17 @@ const tourSchema = new mongoose.Schema(
 // We define a virtual property on our Tour schema
 // We add a get method bc this virtual property will be created each time that we get some date out of the database
 tourSchema.virtual('durationWeeks').get(function () {
+  if (!this.duration) return undefined;
   return this.duration / 7;
 });
 // IMPORTANT: We CANNOT use this virtual property in a query bc they're technically not part of the databse
+
+// Virtual Populate
+tourSchema.virtual('reviews', {
+  ref: 'Review',
+  foreignField: 'tour', // we specify the tour field from the review model
+  localField: '_id', // this _id, which is what is called in the local model (i.e. the tour model), is called tour in the foreign model (i.e. the review model)
+});
 
 // Pre-save hook:
 // This function will be called before a document is saved to thedatabase
@@ -109,6 +150,15 @@ tourSchema.pre('save', function (next) {
   this.slug = slugify(this.name, { lower: true });
   next();
 });
+
+// tourSchema.pre('save', async function (next) {
+//   const guidesPromises = this.guides.map(
+//     async (guide_id) => await User.findById(guide_id)
+//   );
+//   this.guides = await Promise.all(guidesPromises);
+//   next();
+// });
+// /!\ With this method, when we update the user, we also need to update the tour document
 
 // tourSchema.pre('save', function (next) {
 //   console.log('Will save document...');
@@ -131,12 +181,19 @@ tourSchema.pre(/^find/, function (next) {
   next();
 });
 
+tourSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: 'guides',
+    select: '-__v -passwordChangedAt',
+  });
+  next();
+});
+
 tourSchema.post(/^find/, function (docs, next) {
   console.log(`Query took ${Date.now() - this.start} milliseconds`);
   // console.log(docs);
   next();
 });
-
 // AGGREGATION MIDDLEWARE
 //We also want to exclude the secret tour of all our agregations
 tourSchema.pre('aggregate', function (next) {

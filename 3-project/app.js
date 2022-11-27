@@ -1,7 +1,4 @@
 // NOTE : This app.js file is usually mainly used for middleware declarations
-
-console.log('test');
-
 const fs = require('fs');
 const express = require('express');
 const morgan = require('morgan');
@@ -15,6 +12,7 @@ const AppError = require('./utils/appError');
 const globalErrorHanlder = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
 
 const app = express();
 
@@ -86,6 +84,7 @@ app.use((req, res, next) => {
 // It's called MOUNTING the router, i.e mounting a new router on a route.
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reviews', reviewRouter);
 
 //We implement a route handler We could use get but we want to handle all the routes (all the url's) for all the verbs(get, post, delete, patch..). To do that we use app.all() and we pass the star * bc we want all the url's
 // NOTE: we have to put it after calling (i.e mounting) the routers
