@@ -126,6 +126,11 @@ const tourSchema = new mongoose.Schema(
   }
 );
 
+tourSchema.index({ price: 1, ratingsAverage: -1 });
+// 1 means that we are sorting the price index in an ascending order, while -1 stands for descending order
+// WHY? when we query api/v1/tours?price[lt]=1000 for example, mongoDB is only gonna need to scan the first documents and not all of them => Increase the performance
+tourSchema.index({ slug: 1 });
+
 // We define a virtual property on our Tour schema
 // We add a get method bc this virtual property will be created each time that we get some date out of the database
 tourSchema.virtual('durationWeeks').get(function () {
