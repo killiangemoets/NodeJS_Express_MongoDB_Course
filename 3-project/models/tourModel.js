@@ -38,6 +38,7 @@ const tourSchema = new mongoose.Schema(
       default: 4.5,
       min: [1, 'Rating must be above 1.0'],
       max: [5, 'Rating must be below 5.0'],
+      set: (val) => Math.round(val * 10) / 10, // this function run each time there is a new value for ratingsAverage
     },
     ratingsQuantity: {
       type: Number,
@@ -131,6 +132,11 @@ tourSchema.index({ price: 1, ratingsAverage: -1 });
 // WHY? when we query api/v1/tours?price[lt]=1000 for example, mongoDB is only gonna need to scan the first documents and not all of them => Increase the performance
 tourSchema.index({ slug: 1 });
 
+// In order to be able to do geospatial queries, we need to first attribute an index to the field where the geospatial data that we're searching for is stored.
+// For geospatial data, this index needs to be a 2D sphere index if the data describes real points on the earth like spehere
+// we can also use a 2D index if we're using just fictional points on a simple 2 dimensional plane
+tourSchema.index({ startLocation: '2dsphere' });
+
 // We define a virtual property on our Tour schema
 // We add a get method bc this virtual property will be created each time that we get some date out of the database
 tourSchema.virtual('durationWeeks').get(function () {
@@ -201,12 +207,12 @@ tourSchema.post(/^find/, function (docs, next) {
 });
 // AGGREGATION MIDDLEWARE
 //We also want to exclude the secret tour of all our agregations
-tourSchema.pre('aggregate', function (next) {
-  //this.pipeline() is an array so we use unshift to add an element at the beginning of this array
-  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-  // console.log(this.pipeline());
-  next();
-});
+// tourSchema.pre('aggregate', function (next) {
+//   //this.pipeline() is an array so we use unshift to add an element at the beginning of this array
+//   this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+//   // console.log(this.pipeline());
+//   next();
+// });
 
 // Mongoose is all about models. A model is like a blueprint that we use to create documents. It's a bit like classes in JavaScript (that we use as blueprints to create objects out of them).
 const Tour = mongoose.model('Tour', tourSchema);

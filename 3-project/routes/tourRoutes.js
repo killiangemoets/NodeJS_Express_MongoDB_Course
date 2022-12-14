@@ -25,6 +25,14 @@ router
     tourController.getMonthlyPlan
   );
 
+router
+  .route('/tours-within/:distance/center/:latlng/unit/:unit')
+  .get(tourController.getToursWithin);
+// /tours-within?distance=233&center=-40,45&unit=mi
+// /tours-within/233/center/-40,45/unit/mi (cleaner)
+
+router.route('/distances/:latlng/unit/:unit').get(tourController.getDistances);
+
 // We want to give the access to all the tours only to the users who logged in
 router
   .route('/')

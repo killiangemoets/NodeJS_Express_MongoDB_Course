@@ -55,7 +55,7 @@ exports.getAllTours = factory.getAll(Tour);
 //   // });
 
 //   if (!tour) {
-//     return next(new AppError('No tour found with that ID', 404));
+// return next(new AppError('No tour found with that ID', 404));
 //   }
 
 //   res.status(200).json({
@@ -242,4 +242,78 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
   //     message: err,
   //   });
   // }
+});
+
+exports.getToursWithin = catchAsync(async (req, res, next) => {
+  const { distance, latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+
+  if (!lat || !lng) {
+    next(
+      new AppError(
+        'Please provide latitude and longitude in format lat,lng',
+        400
+      )
+      // 400 = bad request
+    );
+  }
+
+  const radius = unit === 'mi' ? distance / 3963.2 : distance / 6368.1;
+
+  // $geoWithin finds documents within a certain geometry
+  // we want this geomotry to be a sphere centered in latlng with a radius of distance (in radian!)
+  const tours = await Tour.find({
+    startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } },
+  });
+
+  res.status(200).json({
+    status: 'success',
+    results: tours.length,
+    data: {
+      data: tours,
+    },
+  });
+});
+
+exports.getDistances = catchAsync(async (req, res, next) => {
+  const { latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+
+  if (!lat || !lng) {
+    next(
+      new AppError(
+        'Please provide latitude and longitude in format lat,lng',
+        400
+      )
+      // 400 = bad request
+    );
+  }
+
+  const multiplier = unit === 'mi' ? 0.000621371 : 0.001;
+
+  const distances = await Tour.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: 'Point',
+          coordinates: [+lng, +lat],
+        },
+        distanceField: 'distance', // this is the field where the distance will be calculated
+        distanceMultiplier: multiplier, //here we can specify a number that will be multiplied with all the distances
+      },
+    },
+    {
+      $project: {
+        distance: 1,
+        name: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      data: distances,
+    },
+  });
 });
