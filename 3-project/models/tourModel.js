@@ -143,7 +143,7 @@ tourSchema.virtual('durationWeeks').get(function () {
   if (!this.duration) return undefined;
   return this.duration / 7;
 });
-// IMPORTANT: We CANNOT use this virtual property in a query bc they're technically not part of the databse
+// IMPORTANT: We CANNOT use this virtual property in a query bc they're technically not part of the database
 
 // Virtual Populate
 tourSchema.virtual('reviews', {
