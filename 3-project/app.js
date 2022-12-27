@@ -36,7 +36,7 @@ app.use(cors()); // To allow everyone
 //   origin: 'https://www.natours.com'
 // }));
 
-app.options('*', cors());
+// app.options('*', cors());
 // app.options('/api/v1/tours/:id', cors());
 
 // Serving static files
