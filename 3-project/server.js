@@ -49,8 +49,15 @@ process.on('unhandledRejection', (err) => {
   // By doing server.close, we give the server time to finish all the request that are still pending or being handled at the time
   // And only after that, the server is then killed
   server.close(() => {
-    // In here we can actually pass a code. The code 0 stands for a success and 1 stadns for uncaught exception
+    // In here we can actually pass a code. The code 0 stands for a success and 1 stands for uncaught exception
     process.exit(1);
+  });
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM RECEIVED. Shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated!');
   });
 });
 
